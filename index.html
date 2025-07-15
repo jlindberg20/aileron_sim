@@ -342,6 +342,33 @@
             border-color: #00ffd9;
         }
 
+        .aileron-container {
+            position: relative;
+            width: 100%;
+            height: auto;
+        }
+
+        .aileron-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #aileronCanvas {
+            position: relative;
+            z-index: 1;
+            display: block;
+            width: 100%;
+        }
+
+        #windCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+
         @media (max-width: 1200px) {
             .container {
                 grid-template-columns: 1fr;
@@ -406,7 +433,10 @@
         <div class="right-panel">
             <div class="visualization-section">
                 <h3>AILERON DIAGRAM</h3>
-                <canvas class="aileron-canvas" id="aileronCanvas"></canvas>
+                <div class="aileron-container">
+                    <canvas class="aileron-canvas" id="aileronCanvas"></canvas>
+                    <canvas id="windCanvas"></canvas>
+                </div>
                 <canvas class="fbd-canvas" id="fbdCanvas"></canvas>
             </div>
             <div class="assumptions">
@@ -471,6 +501,62 @@
     </div>
 
     <script>
+        class WindAnimator {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.particles = [];
+                this.speedFactor = 1;
+                this.initParticles();
+            }
+
+            initParticles() {
+                const count = 25;
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        speed: 0.5 + Math.random() * 1.5,
+                        length: 20 + Math.random() * 30
+                    });
+                }
+            }
+
+            update() {
+                for (let p of this.particles) {
+                    p.x -= p.speed * this.speedFactor; // ✅ scaled by slider
+                    if (p.x < -p.length) {
+                        p.x = this.canvas.width + p.length;
+                        p.y = Math.random() * this.canvas.height;
+                    }
+                }
+            }
+
+            draw() {
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                ctx.strokeStyle = 'rgba(255,255,255, 0.70)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let p of this.particles) {
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x + p.length, p.y);
+                }
+                ctx.stroke();
+            }
+
+            animate() {
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.animate());
+            }
+
+            setSpeedFromMach(mach) {
+                // Example: map Mach 0–3 to speed factor 0.2–3.0
+                this.speedFactor = 0.2 + mach * 1.0;
+            }
+                    }
+
         class AileronSimulation {
             constructor() {
                 this.isRunning = false;
@@ -497,7 +583,14 @@
                 
                 // Slider event listeners
                 document.getElementById('angleSlider').addEventListener('input', (e) => this.updateSliderValue('angle', e.target.value));
-                document.getElementById('velocitySlider').addEventListener('input', (e) => this.updateSliderValue('velocity', e.target.value));
+                document.getElementById('velocitySlider').addEventListener('input', (e) => {
+                    this.updateSliderValue('velocity', e.target.value);
+
+                    const mach = parseFloat(e.target.value) / 10;
+                    if (this.wind) {
+                        this.wind.setSpeedFromMach(mach);
+                    }
+                });
                 document.getElementById('areaSlider').addEventListener('input', (e) => this.updateSliderValue('area', e.target.value));
                 document.getElementById('altitudeSlider').addEventListener('input', (e) => this.updateSliderValue('altitude', e.target.value));
                 document.getElementById('hingeDistanceSlider').addEventListener('input', (e) => this.updateSliderValue('hingeDistance', e.target.value));
@@ -515,6 +608,13 @@
                 this.hingeCtx = this.hingeCanvas.getContext('2d');
                 this.powerCtx = this.powerCanvas.getContext('2d');
                 this.aileronCtx = this.aileronCanvas.getContext('2d');
+
+                this.windCanvas = document.getElementById('windCanvas');
+                this.windCtx = this.windCanvas.getContext('2d');
+
+                // ✅ Match size exactly to aileron canvas
+                this.windCanvas.width = this.aileronCanvas.clientWidth;
+                this.windCanvas.height = this.aileronCanvas.clientHeight;
                 
                 this.resizeCanvases();
                 window.addEventListener('resize', () => this.resizeCanvases());
@@ -1199,7 +1299,17 @@
 
         // Initialize the simulation when the page loads
         window.addEventListener('load', () => {
-            new AileronSimulation();
+            const sim = new AileronSimulation();
+
+            const windCanvas = document.getElementById('windCanvas');
+            const wind = new WindAnimator(windCanvas);
+            wind.animate();
+
+            const mach = parseFloat(document.getElementById('velocitySlider').value) / 10;
+            wind.setSpeedFromMach(mach);
+
+            // ⬇️ Connect wind to simulation so sliders can update it
+            sim.wind = wind;
         });
     </script>
 </body>
