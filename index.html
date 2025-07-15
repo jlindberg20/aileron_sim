@@ -297,6 +297,51 @@
             height: 100%;
         }
 
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .mode-label {
+            color: #ccc;
+            font-size: 14px;
+            margin-right: 5px;
+            font-weight: 600;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .mode-buttons input[type="radio"] {
+            display: none;
+        }
+
+        .mode-buttons label {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #222;
+            color: #aaa;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 50px;
+            text-align: center;
+            border: 2px solid #444;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-buttons input[type="radio"]:checked + label {
+            background-color: #00c9a7;
+            color: #000;
+            border-color: #00ffd9;
+        }
+
         @media (max-width: 1200px) {
             .container {
                 grid-template-columns: 1fr;
@@ -317,6 +362,19 @@
                     <button class="btn btn-start" id="startBtn">▶ START</button>
                     <button class="btn btn-pause" id="pauseBtn">⏸ PAUSE</button>
                     <div class="timer" id="timer">00:00:00</div>
+                    <div class="mode-toggle">
+                    <label class="mode-label">MODE</label>
+                    <div class="mode-buttons">
+                        <input type="radio" id="mode-aileron" name="mode" value="aileron" checked>
+                        <label for="mode-aileron">AIL</label>
+
+                        <input type="radio" id="mode-rudderon" name="mode" value="rudderon">
+                        <label for="mode-rudderon">RUD</label>
+
+                        <input type="radio" id="mode-split" name="mode" value="split">
+                        <label for="mode-split">SPLIT</label>
+                    </div>
+                </div>
                 </div>
             </div>
 
@@ -368,8 +426,7 @@
             </div>
 
             <div class="controls-section">
-                <h3>INPUT CONTROLS</h3>
-                
+                <h3>INPUT CONTROLS</h3>                
                 <div class="slider-container">
                     <label class="slider-label">θ - ANGLE OF ATTACK (deg)</label>
                     <div class="slider-wrapper">
@@ -663,14 +720,7 @@
                 document.getElementById('dragValue').textContent = `${dragForce.toFixed(2)} lbf`;
                 document.getElementById('hingeValue').textContent = `${hingeMoment.toFixed(2)} lbf-in`;
                 document.getElementById('powerValue').textContent = `${actuatorPower.toFixed(2)} W`;
-                
-                // Keep only last 500 data points for performance
-                if (this.timeData.length > 500) {
-                    this.timeData.shift();
-                    this.dragData.shift();
-                    this.hingeData.shift();
-                    this.powerData.shift();
-                }
+            
             }
 
             resetData() {
@@ -700,12 +750,12 @@
                 
                 if (xData.length < 2) return;
                 
-                const xMin = Math.min(...xData);
+                const xMin = 0;
                 const xMax = Math.max(...xData);
                 const yMin = Math.min(...yData);
                 const yMax = Math.max(...yData);
                 
-                const xRange = xMax - xMin || 1;
+                const xRange = xMax || 1;
                 const yRange = yMax - yMin || 1;
                 
                 // Draw grid
