@@ -1,0 +1,1156 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aileron Dynamic Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ffffff;
+            letter-spacing: 2px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-start {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-stop {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-pause {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-pause:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .graphs-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .graph {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            flex: 1;
+            min-height: 200px;
+            position: relative;
+        }
+
+        .graph h3 {
+            margin-bottom: 10px;
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .graph-content {
+            width: 100%;
+            height: calc(100% - 60px);
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .current-value {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: #333;
+            color: #ffffff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .visualization-section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            flex: 1;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .visualization-section h3 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .aileron-canvas {
+            width: 100%;
+            height: 300px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+
+        .controls-section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls-section h3 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .assumptions {
+            margin-top: 15px;
+            background-color: #0a0a0a;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            font-size: 13px;
+            color: #ccc;
+            line-height: 1.4;
+            overflow-y: auto;
+            max-height: 180px;
+        }
+
+        .assumptions h4 {
+            color: #ffffff;
+            font-size: 14px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .assumptions ul {
+            list-style: disc;
+            padding-left: 20px;
+        }
+
+        .assumptions li {
+            margin-bottom: 6px;
+        }
+
+        .fbd-canvas {
+            width: 100%;
+            height: 200px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+
+        .slider-container {
+            margin-bottom: 20px;
+        }
+
+        .slider-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #ffffff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #ffffff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .slider-value {
+            min-width: 80px;
+            text-align: right;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .graph-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SHIELD FLIGHT CONTROL SURFACE ANALYSIS</h1>
+        </div>
+
+        <div class="left-panel">
+            <div class="control-section">
+                <div class="control-buttons">
+                    <button class="btn btn-start" id="startBtn">▶ START</button>
+                    <button class="btn btn-pause" id="pauseBtn">⏸ PAUSE</button>
+                    <div class="timer" id="timer">00:00:00</div>
+                </div>
+            </div>
+
+            <div class="graphs-container">
+                <div class="graph">
+                    <h3>DRAG FORCE V.S. TIME</h3>
+                    <div class="graph-content">
+                        <canvas class="graph-canvas" id="dragCanvas"></canvas>
+                        <div class="current-value" id="dragValue">0.00 lbf</div>
+                    </div>
+                </div>
+                <div class="graph">
+                    <h3>HINGE MOMENT V.S. TIME</h3>
+                    <div class="graph-content">
+                        <canvas class="graph-canvas" id="hingeCanvas"></canvas>
+                        <div class="current-value" id="hingeValue">0.00 lbf-in</div>
+                    </div>
+                </div>
+                <div class="graph">
+                    <h3>ACTUATOR POWER V.S. TIME</h3>
+                    <div class="graph-content">
+                        <canvas class="graph-canvas" id="powerCanvas"></canvas>
+                        <div class="current-value" id="powerValue">0.00 W</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="visualization-section">
+                <h3>AILERON DIAGRAM</h3>
+                <canvas class="aileron-canvas" id="aileronCanvas"></canvas>
+                <canvas class="fbd-canvas" id="fbdCanvas"></canvas>
+            </div>
+            <div class="assumptions">
+                <h4>Simulation Assumptions</h4>
+                <ul>
+                    <li>Standard atmosphere with exponential air density decay</li>
+                    <li>Symmetric airfoil with 12% thickness and 4% camber</li>
+                    <li>Drag coefficient: <code>C<sub>D</sub> = 0.03 + 0.4·sin²(θ)</code></li>
+                    <li>Force acts at mid-chord (center of pressure)</li>
+                    <li>Hinge moment includes contributions from drag and gravity</li>
+                    <li>Aileron weight is assumed to be <strong>0.5 lbf/ft²</strong></li>
+                    <li>Center of gravity is 1.0 ft from hinge line</li>
+                    <li>Fixed angular velocity: 0.1 rad/s for actuator power</li>
+                    <li>No unsteady aero (flutter, damping) modeled</li>
+                    <li>Altitude affects density and speed of sound</li>
+                </ul>
+            </div>
+
+            <div class="controls-section">
+                <h3>INPUT CONTROLS</h3>
+                
+                <div class="slider-container">
+                    <label class="slider-label">θ - ANGLE OF ATTACK (deg)</label>
+                    <div class="slider-wrapper">
+                        <input type="range" class="slider" id="angleSlider" min="0" max="60" value="36">
+                        <span class="slider-value" id="angleValue">36°</span>
+                    </div>
+                </div>
+
+                <div class="slider-container">
+                    <label class="slider-label">V - WIND VELOCITY (mach)</label>
+                    <div class="slider-wrapper">
+                        <input type="range" class="slider" id="velocitySlider" min="0" max="30" value="12" step="1">
+                        <span class="slider-value" id="velocityValue">1.2M</span>
+                    </div>
+                </div>
+
+                <div class="slider-container">
+                    <label class="slider-label">A - AILERON SURFACE AREA (Ft²)</label>
+                    <div class="slider-wrapper">
+                        <input type="range" class="slider" id="areaSlider" min="0" max="50" value="25">
+                        <span class="slider-value" id="areaValue">25 Ft²</span>
+                    </div>
+                </div>
+
+                <div class="slider-container">
+                    <label class="slider-label">h - ALTITUDE (Ft)</label>
+                    <div class="slider-wrapper">
+                        <input type="range" class="slider" id="altitudeSlider" min="0" max="60" value="10" step="1">
+                        <span class="slider-value" id="altitudeValue">10,000 Ft</span>
+                    </div>
+                </div>
+
+                <div class="slider-container">
+                    <label class="slider-label">d - MOMENT ARM CG -> HINGE JOINT (Ft)</label>
+                    <div class="slider-wrapper">
+                        <input type="range" class="slider" id="hingeDistanceSlider" min="0.1" max="5" value="1.5" step="0.1">
+                        <span class="slider-value" id="hingeDistanceValue">1.5 Ft</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class AileronSimulation {
+            constructor() {
+                this.isRunning = false;
+                this.isPaused = false;
+                this.startTime = 0;
+                this.pausedTime = 0;
+                this.currentTime = 0;
+                this.animationId = null;
+                
+                this.dragData = [];
+                this.hingeData = [];
+                this.powerData = [];
+                this.timeData = [];
+                
+                this.setupEventListeners();
+                this.setupCanvases();
+                this.updateDisplay();
+                this.drawAileron();
+            }
+
+            setupEventListeners() {
+                document.getElementById('startBtn').addEventListener('click', () => this.toggleSimulation());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pauseSimulation());
+                
+                // Slider event listeners
+                document.getElementById('angleSlider').addEventListener('input', (e) => this.updateSliderValue('angle', e.target.value));
+                document.getElementById('velocitySlider').addEventListener('input', (e) => this.updateSliderValue('velocity', e.target.value));
+                document.getElementById('areaSlider').addEventListener('input', (e) => this.updateSliderValue('area', e.target.value));
+                document.getElementById('altitudeSlider').addEventListener('input', (e) => this.updateSliderValue('altitude', e.target.value));
+                document.getElementById('hingeDistanceSlider').addEventListener('input', (e) => this.updateSliderValue('hingeDistance', e.target.value));
+            }
+
+            setupCanvases() {
+                this.dragCanvas = document.getElementById('dragCanvas');
+                this.hingeCanvas = document.getElementById('hingeCanvas');
+                this.powerCanvas = document.getElementById('powerCanvas');
+                this.aileronCanvas = document.getElementById('aileronCanvas');
+                this.fbdCanvas = document.getElementById('fbdCanvas');
+                this.fbdCtx = this.fbdCanvas.getContext('2d');
+
+                this.dragCtx = this.dragCanvas.getContext('2d');
+                this.hingeCtx = this.hingeCanvas.getContext('2d');
+                this.powerCtx = this.powerCanvas.getContext('2d');
+                this.aileronCtx = this.aileronCanvas.getContext('2d');
+                
+                this.resizeCanvases();
+                window.addEventListener('resize', () => this.resizeCanvases());
+            }
+
+            resizeCanvases() {
+                const canvases = [this.dragCanvas, this.hingeCanvas, this.powerCanvas];
+                canvases.forEach(canvas => {
+                    canvas.width = canvas.offsetWidth;
+                    canvas.height = canvas.offsetHeight;
+                });
+                
+                this.fbdCanvas.width = this.fbdCanvas.offsetWidth;
+                this.fbdCanvas.height = this.fbdCanvas.offsetHeight;
+
+                this.aileronCanvas.width = this.aileronCanvas.offsetWidth;
+                this.aileronCanvas.height = this.aileronCanvas.offsetHeight;
+                this.drawAileron();
+            }
+
+            updateSliderValue(type, value) {
+                const numValue = parseFloat(value);
+                switch(type) {
+                    case 'angle':
+                        document.getElementById('angleValue').textContent = `${value}°`;
+                        break;
+                    case 'velocity':
+                        document.getElementById('velocityValue').textContent = `${(numValue/10).toFixed(1)}M`;
+                        break;
+                    case 'area':
+                        document.getElementById('areaValue').textContent = `${value} Ft²`;
+                        break;
+                    case 'altitude':
+                        document.getElementById('altitudeValue').textContent = `${(numValue * 1000).toLocaleString()} Ft`;
+                        break;
+                    case 'hingeDistance':
+                        document.getElementById('hingeDistanceValue').textContent = `${numValue} Ft`;
+                        break;
+                }
+                this.drawAileron();
+            }
+
+            getParameters() {
+                return {
+                    angleOfAttack: parseFloat(document.getElementById('angleSlider').value),
+                    windVelocity: parseFloat(document.getElementById('velocitySlider').value) / 10,
+                    aileronArea: parseFloat(document.getElementById('areaSlider').value),
+                    altitude: parseFloat(document.getElementById('altitudeSlider').value) * 1000,
+                    hingeDistance: parseFloat(document.getElementById('hingeDistanceSlider').value)
+                };
+            }
+
+            calculateDragForce(angleOfAttack, windVelocity, aileronArea, altitude) {
+                const RHO_0 = 0.002377;
+                const SOUND_SPEED_0 = 1125;
+                const SCALE_HEIGHT = 27000;
+                const CD_0 = 0.03;
+                const CD_ALPHA = 0.4;
+                const TEMP_0 = 518.67;
+                const TEMP_LAPSE = 0.0065;
+                
+                const theta_rad = angleOfAttack * Math.PI / 180;
+                const rho = RHO_0 * Math.exp(-altitude / SCALE_HEIGHT);
+                const temp_ratio = Math.sqrt(Math.max(0.1, 1 - TEMP_LAPSE * altitude / TEMP_0));
+                const sound_speed = SOUND_SPEED_0 * temp_ratio;
+                const velocity = windVelocity * sound_speed;
+                const cd = CD_0 + CD_ALPHA * Math.pow(Math.sin(theta_rad), 2);
+                const drag_force = 0.5 * rho * velocity * velocity * aileronArea * cd;
+                
+                return drag_force;
+            }
+
+            calculateHingeMoment(dragForce, angleOfAttack, hingeDistance, aileronArea) {
+                const theta_rad = angleOfAttack * Math.PI / 180;
+                
+                // 1. Drag contribution
+                const r_drag = hingeDistance * (1 / Math.cos(theta_rad)); // in feet
+                const M_drag = dragForce * r_drag * 12; // ft × lbf → in-lbf
+
+                // 2. Weight contribution
+                const weightPerFt2 = 0.5; // lbf/ft²
+                const weight = aileronArea * weightPerFt2; // total weight in lbf
+
+                const cgFromHinge = 1.0; // assume 1 ft from hinge to CG (you could expose this later)
+                const r_weight = cgFromHinge * Math.cos(theta_rad); // ft
+                const M_weight = weight * r_weight * 12; // in-lbf
+
+                // 3. Total moment
+                return M_drag + M_weight;
+            }
+
+
+            calculateActuatorPower(hingeMoment, angleOfAttack) {
+                const angularVelocity = 0.1; // rad/s - assumed constant for demonstration
+                const powerWatts = Math.abs(hingeMoment) * angularVelocity * 0.737562; // Convert to watts
+                return powerWatts;
+            }
+
+            toggleSimulation() {
+                if (!this.isRunning) {
+                    this.startSimulation();
+                } else {
+                    this.stopSimulation();
+                }
+            }
+
+            startSimulation() {
+                this.isRunning = true;
+                this.isPaused = false;
+                this.startTime = Date.now() - this.pausedTime;
+                
+                const startBtn = document.getElementById('startBtn');
+                startBtn.textContent = '⏹ STOP';
+                startBtn.className = 'btn btn-stop';
+                
+                this.animate();
+            }
+
+            stopSimulation() {
+                this.isRunning = false;
+                this.isPaused = false;
+                this.pausedTime = 0;
+                this.currentTime = 0;
+                
+                const startBtn = document.getElementById('startBtn');
+                startBtn.textContent = '▶ START';
+                startBtn.className = 'btn btn-start';
+                
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                
+                this.resetData();
+                this.updateDisplay();
+                this.drawGraphs();
+            }
+
+            pauseSimulation() {
+                if (!this.isRunning) return;
+                
+                this.isPaused = !this.isPaused;
+                if (this.isPaused) {
+                    this.pausedTime = Date.now() - this.startTime;
+                    if (this.animationId) {
+                        cancelAnimationFrame(this.animationId);
+                    }
+                } else {
+                    this.startTime = Date.now() - this.pausedTime;
+                    this.animate();
+                }
+            }
+
+            animate() {
+                if (!this.isRunning || this.isPaused) return;
+                
+                this.currentTime = Date.now() - this.startTime;
+                this.updateDisplay();
+                this.updateData();
+                this.drawGraphs();
+                
+                this.animationId = requestAnimationFrame(() => this.animate());
+            }
+
+            updateDisplay() {
+                const timeSeconds = this.currentTime / 1000;
+                const minutes = Math.floor(timeSeconds / 60);
+                const seconds = Math.floor(timeSeconds % 60);
+                const milliseconds = Math.floor((timeSeconds % 1) * 100);
+                
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${milliseconds.toString().padStart(2, '0')}`;
+            }
+
+            updateData() {
+                const params = this.getParameters();
+                const timeSeconds = this.currentTime / 1000;
+                
+                const dragForce = this.calculateDragForce(
+                    params.angleOfAttack,
+                    params.windVelocity,
+                    params.aileronArea,
+                    params.altitude
+                );
+                
+                const hingeMoment = this.calculateHingeMoment(
+                    dragForce,
+                    params.angleOfAttack,
+                    params.hingeDistance,
+                    params.aileronArea
+                );
+                
+                const actuatorPower = this.calculateActuatorPower(
+                    hingeMoment,
+                    params.angleOfAttack
+                );
+                
+                this.timeData.push(timeSeconds);
+                this.dragData.push(dragForce);
+                this.hingeData.push(hingeMoment);
+                this.powerData.push(actuatorPower);
+                
+                // Update current value displays
+                document.getElementById('dragValue').textContent = `${dragForce.toFixed(2)} lbf`;
+                document.getElementById('hingeValue').textContent = `${hingeMoment.toFixed(2)} lbf-in`;
+                document.getElementById('powerValue').textContent = `${actuatorPower.toFixed(2)} W`;
+                
+                // Keep only last 500 data points for performance
+                if (this.timeData.length > 500) {
+                    this.timeData.shift();
+                    this.dragData.shift();
+                    this.hingeData.shift();
+                    this.powerData.shift();
+                }
+            }
+
+            resetData() {
+                this.timeData = [];
+                this.dragData = [];
+                this.hingeData = [];
+                this.powerData = [];
+                
+                // Reset current value displays
+                document.getElementById('dragValue').textContent = '0.00 lbf';
+                document.getElementById('hingeValue').textContent = '0.00 lbf-in';
+                document.getElementById('powerValue').textContent = '0.00 W';
+            }
+
+            drawGraphs() {
+                this.drawGraph(this.dragCtx, this.dragCanvas, this.timeData, this.dragData, '#00ff88', 'Force (lbf)');
+                this.drawGraph(this.hingeCtx, this.hingeCanvas, this.timeData, this.hingeData, '#ff6b6b', 'Moment (lbf-in)');
+                this.drawGraph(this.powerCtx, this.powerCanvas, this.timeData, this.powerData, '#4ecdc4', 'Power (W)');
+            }
+
+            drawGraph(ctx, canvas, xData, yData, color, yLabel) {
+                const width = canvas.width;
+                const height = canvas.height;
+                const padding = 50;
+                
+                ctx.clearRect(0, 0, width, height);
+                
+                if (xData.length < 2) return;
+                
+                const xMin = Math.min(...xData);
+                const xMax = Math.max(...xData);
+                const yMin = Math.min(...yData);
+                const yMax = Math.max(...yData);
+                
+                const xRange = xMax - xMin || 1;
+                const yRange = yMax - yMin || 1;
+                
+                // Draw grid
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                
+                for (let i = 0; i <= 10; i++) {
+                    const x = padding + (i / 10) * (width - 2 * padding);
+                    const y = padding + (i / 10) * (height - 2 * padding);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding);
+                    ctx.lineTo(x, height - padding);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(width - padding, y);
+                    ctx.stroke();
+                }
+                
+                // Draw axis ticks and labels
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                
+                // X-axis ticks
+                for (let i = 0; i <= 5; i++) {
+                    const x = padding + (i / 5) * (width - 2 * padding);
+                    const value = xMin + (i / 5) * xRange;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x, height - padding);
+                    ctx.lineTo(x, height - padding + 5);
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.stroke();
+                    
+                    ctx.fillText(value.toFixed(1), x, height - padding + 18);
+                }
+                
+                // Y-axis ticks
+                ctx.textAlign = 'right';
+                for (let i = 0; i <= 5; i++) {
+                    const y = height - padding - (i / 5) * (height - 2 * padding);
+                    const value = yMin + (i / 5) * yRange;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(padding - 5, y);
+                    ctx.lineTo(padding, y);
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.stroke();
+                    
+                    ctx.fillText(value.toFixed(1), padding - 8, y + 3);
+                }
+                
+                // Draw data line
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < xData.length; i++) {
+                    const x = padding + ((xData[i] - xMin) / xRange) * (width - 2 * padding);
+                    const y = height - padding - ((yData[i] - yMin) / yRange) * (height - 2 * padding);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                
+                ctx.stroke();
+                
+                // Draw axes labels
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('TIME (S)', width / 2, height - 10);
+                
+                ctx.save();
+                ctx.translate(15, height / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText(yLabel, 0, 0);
+                ctx.restore();
+            }
+
+            // Generate smooth airfoil coordinates using mathematical curves
+            generateAirfoilCoordinates(scale, segments = 100) {
+                const coords = [];
+                
+                // NACA 4-digit airfoil approximation for smooth curves
+                for (let i = 0; i <= segments; i++) {
+                    const x = (i / segments) * 2 - 1; // -1 to 1 range
+                    
+                    // Thickness distribution (symmetric)
+                    const t = 0.12; // 12% thickness
+                    const thickness = t * (0.2969 * Math.sqrt(Math.abs(x + 1) / 2) - 
+                                          0.1260 * (x + 1) / 2 - 
+                                          0.3516 * Math.pow((x + 1) / 2, 2) + 
+                                          0.2843 * Math.pow((x + 1) / 2, 3) - 
+                                          0.1015 * Math.pow((x + 1) / 2, 4));
+                    
+                    // Camber line (asymmetric)
+                    const m = 0.04; // 4% camber
+                    const p = 0.4; // 40% camber position
+                    let camber = 0;
+                    
+                    const xNorm = (x + 1) / 2; // normalize to 0-1
+                    if (xNorm <= p) {
+                        camber = m * (2 * p * xNorm - xNorm * xNorm) / (p * p);
+                    } else {
+                        camber = m * (1 - 2 * p + 2 * p * xNorm - xNorm * xNorm) / ((1 - p) * (1 - p));
+                    }
+                    
+                    coords.push({
+                        x: x * scale,
+                        upper: (camber + thickness) * scale,
+                        lower: (camber - thickness) * scale
+                    });
+                }
+                
+                return coords;
+            }
+
+           drawFBD() {
+    const ctx = this.fbdCtx;
+    const canvas = this.fbdCanvas;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const scale = 80;
+
+    const angleDeg = parseFloat(document.getElementById('angleSlider').value);
+    const angleRad = angleDeg * Math.PI / 180;
+
+    const params = this.getParameters();
+    const drag = this.calculateDragForce(params.angleOfAttack, params.windVelocity, params.aileronArea, params.altitude);
+    const weight = params.aileronArea * 0.5;
+    const hingeMoment = this.calculateHingeMoment(drag, params.angleOfAttack, params.hingeDistance, params.aileronArea);
+
+    // --- Save & draw aileron line (rotated) ---
+    ctx.save();
+
+    const hingeX = centerX + scale;
+    const hingeY = centerY;
+    ctx.translate(hingeX, hingeY);
+    ctx.rotate(angleRad);
+
+    // Aileron body (white line)
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-2 * scale, 0);
+    ctx.lineTo(0, 0);
+    ctx.stroke();
+
+    // Reactions
+    const rxVec = { x: 30, y: 0 };
+    const ryVec = { x: 0, y: -60 };
+
+    ctx.strokeStyle = '#5bc0de';
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(rxVec.x, rxVec.y);
+    ctx.stroke();
+    ctx.fillStyle = '#5bc0de';
+    ctx.fillText('Rx', rxVec.x + 10, rxVec.y);
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(ryVec.x, ryVec.y);
+    ctx.stroke();
+    ctx.fillText('Ry', ryVec.x - 10, ryVec.y - 10);
+
+    // Moment arc
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, Math.PI * 0.2, Math.PI * 1.7, false);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(20 * Math.cos(1.7 * Math.PI), 20 * Math.sin(1.7 * Math.PI));
+    ctx.lineTo(15, 10);
+    ctx.lineTo(25, 10);
+    ctx.closePath();
+    ctx.fillStyle = '#ffd700';
+    ctx.fill();
+    ctx.fillText('MH', 25, -10);
+
+    ctx.restore(); // 🔁 Exit rotation — now draw in screen space
+
+    // --- Force vectors (vertical, in screen space) ---
+
+    // CG position: ~1 scale unit left of hinge in rotated space
+    const cgOffset = -scale; // CG from hinge in body frame
+    const cgX = hingeX + cgOffset * Math.cos(angleRad);
+    const cgY = hingeY + cgOffset * Math.sin(angleRad);
+
+    // FD·sec(θ)
+    const fdMag = drag * (1 / Math.cos(angleRad));
+    const fdLength = fdMag * 0.05;
+
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cgX, cgY);
+    ctx.lineTo(cgX, cgY + fdLength);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cgX, cgY + fdLength);
+    ctx.lineTo(cgX - 6, cgY + fdLength - 12);
+    ctx.lineTo(cgX + 6, cgY + fdLength - 12);
+    ctx.closePath();
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fill();
+
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = '12px Arial';
+    ctx.fillText('FD·sec(θ)', cgX + 40, cgY + fdLength + 5);
+
+    // W
+    const wLength = weight * 5;
+    const wX = cgX + 12;
+
+    ctx.strokeStyle = '#f0ad4e';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(wX, cgY);
+    ctx.lineTo(wX, cgY + wLength);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(wX, cgY + wLength);
+    ctx.lineTo(wX - 6, cgY + wLength - 12);
+    ctx.lineTo(wX + 6, cgY + wLength - 12);
+    ctx.closePath();
+    ctx.fillStyle = '#f0ad4e';
+    ctx.fill();
+
+    ctx.fillStyle = '#f0ad4e';
+    ctx.fillText('W', wX + 20, cgY + wLength);
+
+    // --- Static force labels ---
+    ctx.font = '13px monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.fillText(`FD: ${drag.toFixed(2)} lbf`, 15, 30);
+    ctx.fillText(`W:  ${weight.toFixed(2)} lbf`, 15, 50);
+    ctx.fillText(`MH: ${hingeMoment.toFixed(2)} lbf-in`, 15, 70);
+}
+
+
+
+
+            drawAileron() {
+    const ctx = this.aileronCtx;
+    const canvas = this.aileronCanvas;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const scale = 100;
+
+    const angleOfAttack = parseFloat(document.getElementById('angleSlider').value);
+    const angleRad = angleOfAttack * Math.PI / 180;
+
+    const hingeX = centerX + scale * 0.6;
+    const hingeY = centerY;
+
+    const params = this.getParameters();
+    const drag = this.calculateDragForce(params.angleOfAttack, params.windVelocity, params.aileronArea, params.altitude);
+    const weight = params.aileronArea * 0.5;
+    const theta_rad = angleRad;
+
+    // Reference line
+    ctx.setLineDash([8, 4]);
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX - scale * 1.5, centerY);
+    ctx.lineTo(centerX + scale * 1.5, centerY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const airfoilCoords = this.generateAirfoilCoordinates(scale, 150);
+
+    ctx.save();
+    ctx.translate(hingeX, hingeY);
+    ctx.rotate(angleRad);
+
+    // Draw airfoil
+    ctx.beginPath();
+    ctx.moveTo(airfoilCoords[0].x - scale, airfoilCoords[0].upper);
+    for (let i = 1; i < airfoilCoords.length; i++) {
+        ctx.lineTo(airfoilCoords[i].x - scale, airfoilCoords[i].upper);
+    }
+    for (let i = airfoilCoords.length - 1; i >= 0; i--) {
+        ctx.lineTo(airfoilCoords[i].x - scale, airfoilCoords[i].lower);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#4ecdc4';
+    ctx.fill();
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Camber line
+    ctx.setLineDash([10, 5]);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-scale * 2, 0);
+    ctx.lineTo(scale * 0.2, 0);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.restore();
+
+    // Draw hinge point
+    ctx.fillStyle = '#ff6b6b';
+    ctx.beginPath();
+    ctx.arc(hingeX, hingeY, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Calculate CG location in canvas coords
+    const airfoilCenterOffsetX = -scale * 0.4;
+    const rotatedCenterX = hingeX + airfoilCenterOffsetX * Math.cos(angleRad);
+    const rotatedCenterY = hingeY + airfoilCenterOffsetX * Math.sin(angleRad);
+
+    // --- FD·sec(θ) (Red Vector) ---
+    const fdVerticalMag = drag * (1 / Math.cos(angleRad));
+    const fdLength = fdVerticalMag * 0.05;
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(rotatedCenterX, rotatedCenterY);
+    ctx.lineTo(rotatedCenterX, rotatedCenterY + fdLength);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(rotatedCenterX, rotatedCenterY + fdLength);
+    ctx.lineTo(rotatedCenterX - 6, rotatedCenterY + fdLength - 12);
+    ctx.lineTo(rotatedCenterX + 6, rotatedCenterY + fdLength - 12);
+    ctx.closePath();
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('FD·sec(θ)', rotatedCenterX + 35, rotatedCenterY + fdLength);
+
+    // --- Weight Vector W (Yellow) ---
+    const weightLength = weight * 5; // Visual scaling
+    const weightOffset = 12; // Horizontal offset to avoid overlap with FD
+    ctx.strokeStyle = '#f0ad4e';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(rotatedCenterX + weightOffset, rotatedCenterY);
+    ctx.lineTo(rotatedCenterX + weightOffset, rotatedCenterY + weightLength);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(rotatedCenterX + weightOffset, rotatedCenterY + weightLength);
+    ctx.lineTo(rotatedCenterX + weightOffset - 6, rotatedCenterY + weightLength - 12);
+    ctx.lineTo(rotatedCenterX + weightOffset + 6, rotatedCenterY + weightLength - 12);
+    ctx.closePath();
+    ctx.fillStyle = '#f0ad4e';
+    ctx.fill();
+
+    ctx.fillStyle = '#f0ad4e';
+    ctx.font = '14px Arial';
+    ctx.fillText('W', rotatedCenterX + weightOffset + 20, rotatedCenterY + weightLength);
+
+    // --- Angle arc ---
+    if (Math.abs(angleOfAttack) > 0) {
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (angleOfAttack > 0) {
+            ctx.arc(hingeX, hingeY, 50, 0, angleRad, false);
+        } else {
+            ctx.arc(hingeX, hingeY, 50, angleRad, 0, false);
+        }
+        ctx.stroke();
+
+        const arrowX = hingeX + 50 * Math.cos(angleRad);
+        const arrowY = hingeY + 50 * Math.sin(angleRad);
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(arrowX - 10 * Math.cos(angleRad - 0.3), arrowY - 10 * Math.sin(angleRad - 0.3));
+        ctx.lineTo(arrowX - 10 * Math.cos(angleRad + 0.3), arrowY - 10 * Math.sin(angleRad + 0.3));
+        ctx.closePath();
+        ctx.fillStyle = '#ffd700';
+        ctx.fill();
+    }
+
+    // --- Angle label ---
+    if (Math.abs(angleOfAttack) > 0) {
+        const labelX = hingeX + 60 * Math.cos(angleRad / 2);
+        const labelY = hingeY + 60 * Math.sin(angleRad / 2);
+        ctx.fillStyle = '#ffd700';
+        ctx.font = '12px Arial';
+        ctx.fillText(`θ = ${angleOfAttack}°`, labelX, labelY);
+    } else {
+        ctx.fillStyle = '#ffd700';
+        ctx.font = '12px Arial';
+        ctx.fillText(`θ = ${angleOfAttack}°`, centerX, centerY + 80);
+    }
+
+    // --- Hinge moment arc ---
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(hingeX, hingeY, 25, 0, Math.PI);
+    ctx.stroke();
+    ctx.fillStyle = '#ffd700';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('HM', hingeX, hingeY - 35);
+
+    this.drawFBD();
+}
+
+
+        }
+
+        // Initialize the simulation when the page loads
+        window.addEventListener('load', () => {
+            new AileronSimulation();
+        });
+    </script>
+</body>
+</html>
